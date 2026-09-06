@@ -66,11 +66,62 @@ pub fn credentials_path() -> Option<PathBuf> {
     claude_config_dir().map(|d| d.join(".credentials.json"))
 }
 
-/// Read and parse the credentials from the default location.
+/// Read and parse the credentials using this platform's secure storage.
 pub fn load() -> Result<Credentials> {
+    let raw = read_raw_credentials()?;
+    parse(&raw)
+}
+
+/// Read the raw credentials JSON from the platform's native store.
+///
+/// - **Windows / Linux:** the `~/.claude/.credentials.json` file Claude Code writes.
+/// - **macOS:** the login Keychain generic-password item `Claude Code-credentials`
+///   (Claude Code's default), falling back to the file if present (SSH/headless sessions).
+///
+/// We never store, copy or write these credentials — we only read them, exactly as Claude Code
+/// does, and use the token solely for the official usage request.
+pub fn read_raw_credentials() -> Result<String> {
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(s) = read_macos_keychain() {
+            return Ok(s);
+        }
+    }
+    read_credentials_file()
+}
+
+fn read_credentials_file() -> Result<String> {
     let path =
         credentials_path().ok_or_else(|| Error::CredentialsNotFound("<no home dir>".into()))?;
-    load_from(&path)
+    if !path.exists() {
+        return Err(Error::CredentialsNotFound(path.display().to_string()));
+    }
+    Ok(std::fs::read_to_string(path)?)
+}
+
+/// macOS: pull the credentials JSON out of the login Keychain via `/usr/bin/security`.
+/// Returns `None` (so the caller can fall back to the file) on any failure, e.g. the
+/// `errSecInteractionNotAllowed` you get from a locked keychain over SSH.
+#[cfg(target_os = "macos")]
+fn read_macos_keychain() -> Option<String> {
+    let out = std::process::Command::new("/usr/bin/security")
+        .args([
+            "find-generic-password",
+            "-s",
+            "Claude Code-credentials",
+            "-w",
+        ])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if s.is_empty() {
+        None
+    } else {
+        Some(s)
+    }
 }
 
 /// Read and parse the credentials from an explicit path (used by tests).

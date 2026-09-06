@@ -109,8 +109,14 @@ pub fn parse_session_lines<'a, I: IntoIterator<Item = &'a str>>(lines: I) -> Ses
             None => continue,
         };
         stats.assistant_messages += 1;
-        stats.input_tokens += usage.get("input_tokens").and_then(|x| x.as_u64()).unwrap_or(0);
-        stats.output_tokens += usage.get("output_tokens").and_then(|x| x.as_u64()).unwrap_or(0);
+        stats.input_tokens += usage
+            .get("input_tokens")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0);
+        stats.output_tokens += usage
+            .get("output_tokens")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0);
         stats.cache_creation_tokens += usage
             .get("cache_creation_input_tokens")
             .and_then(|x| x.as_u64())
@@ -138,7 +144,7 @@ pub fn aggregate_dir(dir: &Path, max_sessions: usize) -> HistoryStats {
     let mut files: Vec<(std::time::SystemTime, PathBuf)> = Vec::new();
     collect_jsonl(dir, &mut files);
     // Newest first.
-    files.sort_by(|a, b| b.0.cmp(&a.0));
+    files.sort_by_key(|(mtime, _)| std::cmp::Reverse(*mtime));
 
     let mut stats = HistoryStats::default();
     for (_, path) in files.into_iter().take(max_sessions) {
@@ -220,8 +226,10 @@ not valid json at all
 
     #[test]
     fn history_signal_needs_enough_sessions() {
-        let mut h = HistoryStats::default();
-        h.sessions = 2;
+        let mut h = HistoryStats {
+            sessions: 2,
+            ..Default::default()
+        };
         assert!(h.signal().is_none());
         h.sessions = 5;
         h.totals.input_tokens = 5 * 500_000; // large sessions
@@ -231,10 +239,14 @@ not valid json at all
 
     #[test]
     fn averages_are_computed() {
-        let mut h = HistoryStats::default();
-        h.sessions = 4;
-        h.totals.assistant_messages = 40;
-        h.totals.input_tokens = 400_000;
+        let h = HistoryStats {
+            sessions: 4,
+            totals: SessionStats {
+                assistant_messages: 40,
+                input_tokens: 400_000,
+                ..Default::default()
+            },
+        };
         assert_eq!(h.avg_messages_per_session(), 10.0);
         assert_eq!(h.avg_tokens_per_session(), 100_000.0);
     }

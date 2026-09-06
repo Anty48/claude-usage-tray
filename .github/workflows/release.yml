@@ -1,0 +1,102 @@
+name: Release
+
+# Push a tag like `v1.0.0` to build installers for every platform and publish a GitHub Release.
+#   git tag v1.0.0
+#   git push --tags
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows (x64) installer
+            os: windows-latest
+            target: ""
+            bundles: nsis
+          - label: macOS (Apple Silicon) dmg
+            os: macos-14
+            target: aarch64-apple-darwin
+            bundles: dmg
+          - label: macOS (Intel) dmg
+            os: macos-13
+            target: x86_64-apple-darwin
+            bundles: dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Add Rust target
+        if: matrix.target != ''
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Tauri CLI (prebuilt)
+        run: npm i -g @tauri-apps/cli@^2
+
+      - name: Run tests
+        run: cargo test -p claude-usage-core
+
+      - name: Build installer
+        shell: bash
+        # Optional code-signing / notarization secrets. When unset the build is simply unsigned.
+        env:
+          # macOS signing + notarization (see README §Code signing & notarization)
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows Authenticode (optional)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ matrix.target }}" ]; then
+            tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+          else
+            tauri build --bundles ${{ matrix.bundles }}
+          fi
+
+      - name: Collect & rename artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          case "${{ matrix.os }}-${{ matrix.target }}" in
+            windows-latest-*)
+              src=$(ls target/release/bundle/nsis/*-setup.exe | head -1)
+              cp "$src" "dist/ClaudeUsageTray-Setup.exe" ;;
+            macos-14-*)
+              src=$(ls target/${{ matrix.target }}/release/bundle/dmg/*.dmg | head -1)
+              cp "$src" "dist/ClaudeUsageTray-macOS-arm64.dmg" ;;
+            macos-13-*)
+              src=$(ls target/${{ matrix.target }}/release/bundle/dmg/*.dmg | head -1)
+              cp "$src" "dist/ClaudeUsageTray-macOS-x64.dmg" ;;
+          esac
+          ls -la dist
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          generate_release_notes: true

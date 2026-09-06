@@ -66,12 +66,18 @@ fn main() {
             commands::update_tray,
         ])
         .setup(|app| {
+            // macOS: behave as a menu-bar utility — no Dock icon, no main window on launch.
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
             // --- Context menu ---
             let refresh = MenuItem::with_id(app, "refresh", "Refresh", true, None::<&str>)?;
             let usage = MenuItem::with_id(app, "usage", "Usage details", true, None::<&str>)?;
-            let calc = MenuItem::with_id(app, "calculator", "Prompt calculator", true, None::<&str>)?;
+            let calc =
+                MenuItem::with_id(app, "calculator", "Prompt calculator", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-            let open = MenuItem::with_id(app, "open_claude", "Open Claude Code", true, None::<&str>)?;
+            let open =
+                MenuItem::with_id(app, "open_claude", "Open Claude Code", true, None::<&str>)?;
             let about = MenuItem::with_id(app, "about", "About", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;

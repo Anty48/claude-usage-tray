@@ -6,10 +6,11 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Model {
     Opus,
+    #[default]
     Sonnet,
     Haiku,
 }
@@ -51,12 +52,6 @@ impl Model {
     }
 }
 
-impl Default for Model {
-    fn default() -> Self {
-        Model::Sonnet
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,7 +67,10 @@ mod tests {
         assert_eq!(Model::from_id("claude-opus-4-8"), Some(Model::Opus));
         assert_eq!(Model::from_id("opus"), Some(Model::Opus));
         assert_eq!(Model::from_id("claude-sonnet-5"), Some(Model::Sonnet));
-        assert_eq!(Model::from_id("claude-haiku-4-5-20251001"), Some(Model::Haiku));
+        assert_eq!(
+            Model::from_id("claude-haiku-4-5-20251001"),
+            Some(Model::Haiku)
+        );
         assert_eq!(Model::from_id("gpt-4"), None);
     }
 }

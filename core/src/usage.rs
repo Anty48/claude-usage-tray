@@ -189,8 +189,14 @@ pub fn parse_usage(
             .map(|u| UsageWindow::new("session", "Current session (5h)", u, parse_ts(&b.resets_at)))
     });
     let weekly = r.seven_day.as_ref().and_then(|b| {
-        b.utilization
-            .map(|u| UsageWindow::new("weekly_all", "This week (all models)", u, parse_ts(&b.resets_at)))
+        b.utilization.map(|u| {
+            UsageWindow::new(
+                "weekly_all",
+                "This week (all models)",
+                u,
+                parse_ts(&b.resets_at),
+            )
+        })
     });
 
     let mut extras = Vec::new();

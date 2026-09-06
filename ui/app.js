@@ -78,14 +78,15 @@ async function fetchUsage(force) {
 function renderError(resp) {
   const box = $("usageError");
   const body = $("usageBody");
+  const TS = "https://github.com/Anty48/claude-usage-tray/blob/main/docs/TROUBLESHOOTING.md";
   const help = {
-    not_found: { icon: "🔍", title: "Claude Code not found", msg: "We couldn't find your Claude Code credentials. Install Claude Code and sign in.", url: "https://docs.claude.com/en/docs/claude-code/overview" },
+    not_found: { icon: "🔍", title: "Claude Code not found", msg: "No Claude Code credentials on this device. Install Claude Code and sign in — it's required.", url: TS + "#claude-code-not-found" },
     not_authenticated: { icon: "🔒", title: "Claude Code is not authenticated", msg: "Open Claude Code and sign in to your account, then try again.", claude: true },
     token_expired: { icon: "⏰", title: "Session expired", msg: "Your Claude Code session token expired. Open Claude Code to refresh it.", claude: true },
-    rate_limited: { icon: "⏳", title: "Try again shortly", msg: "The usage endpoint is rate limited. Showing your last known values.", url: null },
+    rate_limited: { icon: "⏳", title: "Try again shortly", msg: "The usage endpoint is rate limited. Showing your last known values.", url: TS + "#rate-limited" },
     unauthorized: { icon: "🔒", title: "Token rejected", msg: "The stored token was rejected. Re-open Claude Code to refresh your session.", claude: true },
-    network: { icon: "📶", title: "Network unavailable", msg: "Couldn't reach the usage endpoint. Check your connection and retry.", url: null },
-    unavailable: { icon: "•••", title: "Usage information unavailable", msg: "We couldn't read your usage right now.", url: null },
+    network: { icon: "📶", title: "Network unavailable", msg: "Couldn't reach the usage endpoint. Check your connection and retry.", url: TS + "#network" },
+    unavailable: { icon: "•••", title: "Usage information unavailable", msg: "We couldn't read your usage right now.", url: TS + "#unavailable" },
   };
   const h = help[resp.error_kind] || help.unavailable;
   box.hidden = false;
@@ -168,10 +169,11 @@ function renderUsage(resp) {
   $("updated").textContent = "Last updated: " + timeAgo(snap.fetched_at_ms) + (resp.from_cache && !resp.error ? " (cached)" : "");
   syncCalcRemaining();
 
-  // reflect on tray tooltip
+  // reflect on tray tooltip + severity-colored icon
   const showPct = state.settings ? state.settings.show_percentage_in_tray : true;
   const rem = s ? s.percent_remaining : null;
-  invoke("update_tray", { remaining: rem, show_percent: showPct });
+  const sev = s ? s.severity : null;
+  invoke("update_tray", { remaining: rem, severity: sev, show_percent: showPct });
 }
 
 // ---------- account ----------

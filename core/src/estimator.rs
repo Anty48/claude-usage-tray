@@ -42,11 +42,12 @@ impl Complexity {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Sensitivity {
     /// Assume tasks cost more (earlier warnings).
     Conservative,
+    #[default]
     Balanced,
     /// Assume tasks cost less.
     Aggressive,
@@ -59,12 +60,6 @@ impl Sensitivity {
             Sensitivity::Balanced => 1.0,
             Sensitivity::Aggressive => 0.85,
         }
-    }
-}
-
-impl Default for Sensitivity {
-    fn default() -> Self {
-        Sensitivity::Balanced
     }
 }
 
@@ -206,7 +201,12 @@ fn detect_complexity(task: &str) -> (Complexity, Vec<String>, f64, usize) {
             matches += 1;
             if *w >= 3 {
                 factors.push(format!("Mentions “{kw}” → large scope"));
-            } else if *w == 2 && matches!(*kw, "debug" | "investigate" | "reproduce" | "failing" | "flaky" | "test suite") {
+            } else if *w == 2
+                && matches!(
+                    *kw,
+                    "debug" | "investigate" | "reproduce" | "failing" | "flaky" | "test suite"
+                )
+            {
                 factors.push(format!("Mentions “{kw}” → iterative, harder to bound"));
                 spread += 6.0;
             } else if *w > 0 {
@@ -237,7 +237,10 @@ pub fn estimate(input: &EstimateInput) -> Estimate {
     let complexity = input.complexity_override.unwrap_or(auto_complexity);
 
     if !auto_detected {
-        factors.insert(0, format!("Complexity set manually to {}", complexity.label()));
+        factors.insert(
+            0,
+            format!("Complexity set manually to {}", complexity.label()),
+        );
     }
 
     let (mut lo, mut hi) = complexity.base_range();
@@ -352,8 +355,9 @@ mod tests {
 
     #[test]
     fn detects_large_task() {
-        let (c, _, _, _) =
-            detect_complexity("refactor the entire codebase and migrate architecture across modules");
+        let (c, _, _, _) = detect_complexity(
+            "refactor the entire codebase and migrate architecture across modules",
+        );
         assert_eq!(c, Complexity::VeryLarge);
     }
 

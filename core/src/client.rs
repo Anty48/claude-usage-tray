@@ -20,7 +20,10 @@ pub const ANTHROPIC_BETA: &str = "oauth-2025-04-20";
 /// User-Agent prefix required by the endpoint. The exact version is not important, but the
 /// `claude-code/` prefix is: without it the request lands in a hostile rate-limit bucket.
 pub fn user_agent() -> String {
-    format!("claude-code/{}", option_env!("CLAUDE_CODE_UA_VERSION").unwrap_or("2.1.201"))
+    format!(
+        "claude-code/{}",
+        option_env!("CLAUDE_CODE_UA_VERSION").unwrap_or("2.1.201")
+    )
 }
 
 /// Current wall-clock time in epoch milliseconds (UTC).

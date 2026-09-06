@@ -11,18 +11,13 @@ use serde::{Deserialize, Serialize};
 use crate::estimator::Sensitivity;
 use crate::models::Model;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Theme {
+    #[default]
     System,
     Light,
     Dark,
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Theme::System
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,7 +90,9 @@ impl Settings {
         let path = crate::credentials::claude_config_dir()?.join("settings.json");
         let raw = std::fs::read_to_string(path).ok()?;
         let v: serde_json::Value = serde_json::from_str(&raw).ok()?;
-        v.get("model").and_then(|m| m.as_str()).and_then(Model::from_id)
+        v.get("model")
+            .and_then(|m| m.as_str())
+            .and_then(Model::from_id)
     }
 }
 
@@ -113,10 +110,12 @@ mod tests {
 
     #[test]
     fn round_trips_through_json() {
-        let mut s = Settings::default();
-        s.theme = Theme::Dark;
-        s.model = Model::Opus;
-        s.start_with_windows = true;
+        let s = Settings {
+            theme: Theme::Dark,
+            model: Model::Opus,
+            start_with_windows: true,
+            ..Default::default()
+        };
         let json = s.to_json();
         let back = Settings::from_json(&json).unwrap();
         assert_eq!(back.theme, Theme::Dark);

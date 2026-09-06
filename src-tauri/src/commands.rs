@@ -7,8 +7,7 @@
 use std::sync::Mutex;
 
 use claude_usage_core::{
-    client,
-    credentials,
+    client, credentials,
     error::Error,
     estimator::{self, Complexity, EstimateInput, Sensitivity},
     history,
@@ -222,10 +221,7 @@ fn parse_sensitivity(s: &str) -> Sensitivity {
 }
 
 #[tauri::command]
-pub fn estimate(
-    req: EstimateRequest,
-    state: tauri::State<'_, AppState>,
-) -> estimator::Estimate {
+pub fn estimate(req: EstimateRequest, state: tauri::State<'_, AppState>) -> estimator::Estimate {
     let model = req
         .model
         .as_deref()
@@ -287,13 +283,29 @@ pub fn open_claude_code() -> Result<(), String> {
 /// Reflect current usage on the tray tooltip (Windows tray icons can't show a text badge, so
 /// the remaining % is surfaced on hover). Called by the UI after a successful fetch.
 #[tauri::command]
-pub fn update_tray(app: tauri::AppHandle, remaining: Option<f64>, show_percent: bool) {
+pub fn update_tray(
+    app: tauri::AppHandle,
+    remaining: Option<f64>,
+    severity: Option<String>,
+    show_percent: bool,
+) {
     if let Some(tray) = app.tray_by_id("main") {
         let tip = match (show_percent, remaining) {
             (true, Some(r)) => format!("Claude Usage — {:.0}% left this session", r),
             _ => "Claude Usage — click to open".to_string(),
         };
         let _ = tray.set_tooltip(Some(&tip));
+
+        // Reflect severity on the icon (greener → redder as usage is spent).
+        if let Some(sev) = severity.as_deref() {
+            let img = match sev {
+                "critical" => tauri::include_image!("icons/tray-critical.png"),
+                "warn" => tauri::include_image!("icons/tray-warn.png"),
+                "warnsoft" => tauri::include_image!("icons/tray-warnsoft.png"),
+                _ => tauri::include_image!("icons/tray-normal.png"),
+            };
+            let _ = tray.set_icon(Some(img));
+        }
     }
 }
 

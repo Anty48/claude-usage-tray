@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast, platform-independent gate: format, lint and unit-test the shared core logic.
+  core:
+    name: Lint & test core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format check
+        run: cargo fmt -p claude-usage-core -- --check
+      - name: Clippy (deny warnings)
+        run: cargo clippy -p claude-usage-core --all-targets -- -D warnings
+      - name: Unit tests
+        run: cargo test -p claude-usage-core
+
+  # Make sure the full app compiles on every target platform (no packaging here).
+  build:
+    name: Build ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Unit tests
+        run: cargo test -p claude-usage-core
+      - name: Build app
+        run: cargo build -p claude-usage-tray
