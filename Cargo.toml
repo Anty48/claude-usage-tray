@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["core", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Claude Usage Tray contributors"]
+repository = "https://github.com/psardapalla/claude-usage-tray"
+
+[profile.release]
+opt-level = "z"     # optimize for size
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

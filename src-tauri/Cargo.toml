@@ -1,0 +1,21 @@
+[package]
+name = "claude-usage-tray"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "A lightweight Windows tray app that shows your remaining Claude Code usage on demand."
+default-run = "claude-usage-tray"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-autostart = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+claude-usage-core = { path = "../core" }
+
+[features]
+# default features kept minimal for a small binary
+default = []

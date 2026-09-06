@@ -1,0 +1,153 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Usage</title>
+<link rel="stylesheet" href="styles.css" />
+<div class="app" id="app">
+  <!-- Title bar -->
+  <header class="titlebar" data-tauri-drag-region>
+    <div class="brand" data-tauri-drag-region>
+      <span class="dot" id="statusDot" aria-hidden="true"></span>
+      <span class="brand-name">Claude Usage</span>
+      <span class="chip" id="planChip" hidden></span>
+    </div>
+    <div class="titlebar-actions">
+      <button class="icon-btn" id="navSettings" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button class="icon-btn" id="btnClose" title="Close" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Segmented nav -->
+  <nav class="segmented" id="segmented">
+    <button class="seg-btn is-active" data-view="usage">Usage</button>
+    <button class="seg-btn" data-view="calculator">Calculator</button>
+  </nav>
+
+  <main class="content" id="content">
+    <!-- USAGE -->
+    <section class="view is-active" data-view="usage">
+      <div id="usageError" class="state-card" hidden></div>
+
+      <div id="usageBody">
+        <p class="eyebrow">Current session</p>
+        <div class="headline">
+          <span class="big" id="sessionRemaining">—</span>
+          <span class="big-unit">% left</span>
+        </div>
+        <div class="meter"><div class="meter-fill" id="sessionMeter"></div></div>
+        <p class="submeta"><span id="sessionUsed">—</span>% used · resets <span id="sessionReset">—</span></p>
+
+        <div class="divider"></div>
+
+        <div class="row" id="weeklyRow">
+          <div class="row-head">
+            <span class="row-label">This week (all models)</span>
+            <span class="row-val" id="weeklyVal">—</span>
+          </div>
+          <div class="meter meter-sm"><div class="meter-fill" id="weeklyMeter"></div></div>
+          <p class="submeta small">resets <span id="weeklyReset">—</span></p>
+        </div>
+
+        <div id="extraRows"></div>
+
+        <div class="updated">
+          <span id="updated">—</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="btnRefresh">Refresh</button>
+        <button class="btn btn-ghost" id="btnGoCalc">Calculator</button>
+      </div>
+    </section>
+
+    <!-- CALCULATOR -->
+    <section class="view" data-view="calculator">
+      <p class="eyebrow">Can my prompt finish?</p>
+      <label class="field-label" for="taskInput">Describe your task</label>
+      <textarea id="taskInput" class="textarea" rows="4" placeholder="e.g. Refactor the auth module and add tests…"></textarea>
+
+      <label class="field-label">Estimated complexity</label>
+      <div class="segmented segmented-thin" id="complexitySeg">
+        <button class="seg-btn is-active" data-c="auto">Auto</button>
+        <button class="seg-btn" data-c="small">S</button>
+        <button class="seg-btn" data-c="medium">M</button>
+        <button class="seg-btn" data-c="large">L</button>
+        <button class="seg-btn" data-c="verylarge">XL</button>
+      </div>
+
+      <div class="inline-fields">
+        <div>
+          <label class="field-label" for="modelSelect">Model</label>
+          <select id="modelSelect" class="select">
+            <option value="opus">Opus</option>
+            <option value="sonnet">Sonnet</option>
+            <option value="haiku">Haiku</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Remaining</label>
+          <div class="remaining-pill" id="calcRemaining">—%</div>
+        </div>
+      </div>
+
+      <button class="btn btn-block" id="btnEstimate">Estimate</button>
+
+      <div id="estimateResult" class="result" hidden></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" data-view="settings">
+      <div class="view-head">
+        <button class="back" id="backFromSettings" aria-label="Back">←</button>
+        <h2>Settings</h2>
+      </div>
+      <div class="settings-list">
+        <label class="toggle-row"><span>Start with Windows</span><input type="checkbox" id="setAutostart"></label>
+        <label class="toggle-row"><span>Show percentage in tray tooltip</span><input type="checkbox" id="setTrayPct"></label>
+        <label class="toggle-row"><span>Refresh on click</span><input type="checkbox" id="setRefreshClick"></label>
+        <div class="select-row"><span>Theme</span>
+          <select id="setTheme" class="select select-sm">
+            <option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option>
+          </select>
+        </div>
+        <div class="select-row"><span>Model</span>
+          <select id="setModel" class="select select-sm">
+            <option value="opus">Opus</option><option value="sonnet">Sonnet</option><option value="haiku">Haiku</option>
+          </select>
+        </div>
+        <div class="select-row"><span>Estimation sensitivity</span>
+          <select id="setSensitivity" class="select select-sm">
+            <option value="conservative">Conservative</option><option value="balanced">Balanced</option><option value="aggressive">Aggressive</option>
+          </select>
+        </div>
+        <label class="toggle-row"><span>Use my history to calibrate</span><input type="checkbox" id="setUseHistory"></label>
+      </div>
+
+      <div class="history-box" id="historyBox">
+        <p class="eyebrow">Local history</p>
+        <p class="submeta small" id="historySummary">Reading transcripts…</p>
+        <button class="btn btn-ghost btn-sm" id="btnClearHistory">Clear local history</button>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="view" data-view="about">
+      <div class="view-head">
+        <button class="back" id="backFromAbout" aria-label="Back">←</button>
+        <h2>About</h2>
+      </div>
+      <div class="about">
+        <div class="about-mark"><span class="dot"></span></div>
+        <p class="about-name">Claude Usage Tray</p>
+        <p class="submeta">v0.1.0 · a lightweight, on-demand usage meter for Claude Code.</p>
+        <p class="submeta small">Reads your local Claude Code session (read-only) and queries the official Anthropic usage endpoint only when you ask. No polling, no stored secrets, prompts never leave your machine.</p>
+        <button class="btn btn-ghost btn-sm" id="btnDocs">Claude Code docs</button>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
