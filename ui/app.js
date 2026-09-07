@@ -124,9 +124,8 @@ function renderUsage(resp) {
     $("sessionRemaining").textContent = rem;
     $("sessionRemaining").className = "big " + sevClass(s.severity);
     const meter = $("sessionMeter");
-    meter.style.width = Math.min(100, s.percent_used) + "%";
+    meter.style.width = Math.min(100, s.percent_remaining) + "%";
     meter.className = "meter-fill " + sevClass(s.severity);
-    $("sessionUsed").textContent = Math.round(s.percent_used);
     $("sessionReset").textContent = formatReset(s.resets_at);
     const dot = $("statusDot");
     dot.className = "dot " + sevClass(s.severity);
@@ -138,7 +137,7 @@ function renderUsage(resp) {
     weeklyRow.hidden = false;
     $("weeklyVal").textContent = Math.round(w.percent_remaining) + "% left";
     const wm = $("weeklyMeter");
-    wm.style.width = Math.min(100, w.percent_used) + "%";
+    wm.style.width = Math.min(100, w.percent_remaining) + "%";
     wm.className = "meter-fill " + sevClass(w.severity);
     $("weeklyReset").textContent = formatReset(w.resets_at);
   } else {
@@ -153,7 +152,7 @@ function renderUsage(resp) {
     div.className = "row";
     div.innerHTML = `
       <div class="row-head"><span class="row-label">${x.label}</span><span class="row-val">${Math.round(x.percent_remaining)}% left</span></div>
-      <div class="meter meter-sm"><div class="meter-fill ${sevClass(x.severity)}" style="width:${Math.min(100, x.percent_used)}%"></div></div>`;
+      <div class="meter meter-sm"><div class="meter-fill ${sevClass(x.severity)}" style="width:${Math.min(100, x.percent_remaining)}%"></div></div>`;
     ex.appendChild(div);
   });
   if (snap.extra_usage && snap.extra_usage.enabled) {
