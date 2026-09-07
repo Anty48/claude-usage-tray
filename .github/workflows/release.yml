@@ -26,8 +26,11 @@ jobs:
             os: macos-14
             target: aarch64-apple-darwin
             bundles: dmg
+          # Intel (x64) is cross-compiled on the Apple-silicon runner: the dedicated
+          # macos-13 Intel runners are being retired and were queuing for hours, while
+          # macos-14 builds the x86_64 target reliably in minutes (dmg packaging only).
           - label: macOS (Intel) dmg
-            os: macos-13
+            os: macos-14
             target: x86_64-apple-darwin
             bundles: dmg
     runs-on: ${{ matrix.os }}
@@ -100,16 +103,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          case "${{ matrix.os }}-${{ matrix.target }}" in
-            windows-latest-*)
-              src=$(ls target/release/bundle/nsis/*-setup.exe | head -1)
-              cp "$src" "dist/ClaudeUsageTray-Setup.exe" ;;
-            macos-14-*)
+          # Key on the Rust target so both macOS dmgs can build on the same runner image.
+          case "${{ matrix.target }}" in
+            aarch64-apple-darwin)
               src=$(ls target/${{ matrix.target }}/release/bundle/dmg/*.dmg | head -1)
               cp "$src" "dist/ClaudeUsageTray-macOS-arm64.dmg" ;;
-            macos-13-*)
+            x86_64-apple-darwin)
               src=$(ls target/${{ matrix.target }}/release/bundle/dmg/*.dmg | head -1)
               cp "$src" "dist/ClaudeUsageTray-macOS-x64.dmg" ;;
+            "")
+              src=$(ls target/release/bundle/nsis/*-setup.exe | head -1)
+              cp "$src" "dist/ClaudeUsageTray-Setup.exe" ;;
           esac
           ls -la dist
 
