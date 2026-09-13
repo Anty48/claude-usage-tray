@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Claude Usage Tray icon">
+  <defs>
+    <linearGradient id="gauge" x1="8" y1="46" x2="56" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6f9b6b"/>
+      <stop offset="0.5" stop-color="#e0a44e"/>
+      <stop offset="1" stop-color="#df6e3c"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="15" fill="#f1ece1"/>
+  <path d="M17.86 46.14 A20 20 0 1 1 46.14 46.14" fill="none" stroke="url(#gauge)" stroke-width="6.2" stroke-linecap="round"/>
+  <path d="M25 25 L33 32 L25 39" fill="none" stroke="#2a2622" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M35 39 L43 39" fill="none" stroke="#2a2622" stroke-width="3.4" stroke-linecap="round"/>
+</svg>

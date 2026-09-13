@@ -107,9 +107,17 @@ and include your OS and Claude Code version (`claude --version`).
   `~/.claude/.credentials.json` if present.
 - **No Dock icon:** the app runs as a menu-bar utility (`Accessory` activation policy) — look for
   its icon in the **menu bar**, not the Dock.
-- **Gatekeeper:** if you downloaded an **unsigned** build, macOS may say the app "can't be opened".
-  Right-click the app → **Open**, or run `xattr -dr com.apple.quarantine "/Applications/Claude Usage Tray.app"`.
-  See [signing & notarization](../README.md#code-signing--notarization).
+- <a id="app-is-damaged"></a>**"App is damaged and can't be opened" / Gatekeeper:** the released
+  DMGs are **ad-hoc signed but not notarized** (no paid Apple Developer account). macOS puts a
+  *quarantine* flag on anything downloaded, and for a non-notarized app it may refuse to open it —
+  on Apple Silicon this shows up as the app being *"damaged"*. This does **not** mean the download
+  is corrupt. Clear the quarantine flag once:
+  ```bash
+  xattr -dr com.apple.quarantine "/Applications/Claude Usage Tray.app"
+  ```
+  then open the app normally. (Right-click → **Open** works on some macOS versions but not all;
+  the `xattr` command is the reliable fix.) See
+  [signing & notarization](../README.md#code-signing--notarization) for why this happens.
 
 ## Windows-specific notes
 

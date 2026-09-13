@@ -55,10 +55,20 @@ jobs:
       - name: Run tests
         run: cargo test -p claude-usage-core
 
-      # Enable macOS code-signing/notarization ONLY when the secrets are actually present.
-      # (Passing empty APPLE_* env vars makes Tauri attempt to import an empty certificate and
-      # fail — so we must not set them at all when unsigned.)
-      - name: Configure macOS signing (optional)
+      # macOS signing strategy:
+      #   * If real Developer-ID secrets exist  -> sign + notarize (best: no prompt at all).
+      #   * Otherwise                            -> AD-HOC sign (APPLE_SIGNING_IDENTITY="-").
+      #
+      # The ad-hoc branch is essential, not cosmetic: Apple Silicon (arm64) refuses to run any
+      # binary that has NO signature at all, and a download's quarantine flag then makes macOS
+      # report the app as "damaged and can't be opened". Ad-hoc signing gives the bundle a valid
+      # (self) signature so the app runs after Gatekeeper is cleared, turning the hard "damaged"
+      # block into the normal "unidentified developer" prompt (right-click Open / xattr).
+      #
+      # `codesign -s -` (ad-hoc) needs no certificate or keychain, so we must NOT set the
+      # APPLE_CERTIFICATE/APPLE_ID vars here — passing empty ones makes Tauri try to import an
+      # empty certificate and fail.
+      - name: Configure macOS signing
         if: runner.os == 'macOS'
         shell: bash
         run: |
@@ -71,9 +81,10 @@ jobs:
               echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}"
               echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}"
             } >> "$GITHUB_ENV"
-            echo "Apple signing secrets found — building signed & notarized."
+            echo "Apple Developer-ID secrets found — building signed & notarized."
           else
-            echo "No Apple signing secrets — building unsigned (Gatekeeper prompt on first launch)."
+            echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
+            echo "No Developer-ID secrets — AD-HOC signing (runnable on arm64; Gatekeeper prompt on first launch)."
           fi
 
       # Same guard for optional Windows Authenticode / updater signing.
@@ -97,6 +108,18 @@ jobs:
           else
             tauri build --bundles ${{ matrix.bundles }}
           fi
+
+      # Fail fast if the .app ended up unsigned: an unsigned arm64 bundle would ship broken
+      # ("damaged" on the user's Mac). `codesign --verify` succeeds for both ad-hoc and Developer-ID.
+      - name: Verify macOS signature
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          app=$(ls -d target/${{ matrix.target }}/release/bundle/macos/*.app | head -1)
+          echo "Verifying $app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign --display --verbose=2 "$app" 2>&1 | grep -E 'Signature|Authority|flags|Identifier' || true
 
       - name: Collect & rename artifact
         shell: bash

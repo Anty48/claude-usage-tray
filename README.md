@@ -169,8 +169,14 @@ minimum between live fetches and keeps the last snapshot on screen if it hits a 
 ### macOS
 1. Download the `.dmg` matching your chip (arm64 / x64).
 2. Open it and drag **Claude Usage Tray** to Applications.
-3. First launch: right-click the app → **Open** (unsigned builds are Gatekeeper-blocked on
-   double-click). Or: `xattr -dr com.apple.quarantine "/Applications/Claude Usage Tray.app"`.
+3. **Clear the download quarantine before first launch.** These builds are ad-hoc signed but not
+   notarized (no paid Apple Developer account), so macOS quarantines the download and — especially
+   on Apple Silicon — may say the app *"is damaged and can't be opened"*. Run once in Terminal:
+   ```bash
+   xattr -dr com.apple.quarantine "/Applications/Claude Usage Tray.app"
+   ```
+   Then open it normally. (Right-click → **Open** may also work, but on recent macOS the reliable
+   fix is the command above.)
 4. The icon appears in the menu bar (there is no Dock icon).
 
 Both need [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) installed and signed in.
@@ -271,10 +277,12 @@ profile (`opt-level="z"`, LTO, `panic="abort"`, stripped). Idle main process ≈
 
 ### Code signing & notarization
 
-The builds work **unsigned** (users get the standard SmartScreen/Gatekeeper prompt described in
-[Installation](#-installation)). For a smooth public distribution you'll want to sign; the release
-workflow already reads these **optional** secrets — add them under *Settings → Secrets → Actions* and
-signing turns on automatically, no workflow edits needed:
+By default the macOS builds are **ad-hoc signed** (`codesign -s -`) and the Windows build is
+**unsigned**. Ad-hoc signing is required so the app can even run on Apple Silicon; users still clear
+the download quarantine once (see [Installation](#-installation)). For a fully smooth public
+distribution (no Gatekeeper/SmartScreen prompt at all) you'll want real signing + notarization; the
+release workflow already reads these **optional** secrets — add them under *Settings → Secrets →
+Actions* and it upgrades from ad-hoc to signed + notarized automatically, no workflow edits needed:
 
 | Secret | Purpose |
 | --- | --- |
