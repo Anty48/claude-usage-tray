@@ -109,17 +109,24 @@ jobs:
             tauri build --bundles ${{ matrix.bundles }}
           fi
 
-      # Fail fast if the .app ended up unsigned: an unsigned arm64 bundle would ship broken
-      # ("damaged" on the user's Mac). `codesign --verify` succeeds for both ad-hoc and Developer-ID.
+      # Fail fast if the shipped bundle ended up unsigned: an unsigned arm64 app would be broken
+      # ("damaged" on the user's Mac). We verify the .app *inside the dmg* — Tauri deletes the
+      # staging `bundle/macos/*.app` right after packaging, so the dmg is the only copy left.
+      # `codesign --verify` succeeds for both ad-hoc and Developer-ID signatures (we intentionally
+      # do NOT run `spctl --assess`, which would fail on a non-notarized ad-hoc build).
       - name: Verify macOS signature
         if: runner.os == 'macOS'
         shell: bash
         run: |
           set -euo pipefail
-          app=$(ls -d target/${{ matrix.target }}/release/bundle/macos/*.app | head -1)
-          echo "Verifying $app"
+          dmg=$(ls target/${{ matrix.target }}/release/bundle/dmg/*.dmg | head -1)
+          echo "Verifying signature inside $dmg"
+          mnt=$(mktemp -d)
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt" -quiet
+          trap 'hdiutil detach "$mnt" -quiet || true' EXIT
+          app=$(ls -d "$mnt"/*.app | head -1)
           codesign --verify --deep --strict --verbose=2 "$app"
-          codesign --display --verbose=2 "$app" 2>&1 | grep -E 'Signature|Authority|flags|Identifier' || true
+          codesign --display --verbose=2 "$app" 2>&1 | grep -E 'Signature|Authority|Identifier|flags' || true
 
       - name: Collect & rename artifact
         shell: bash
